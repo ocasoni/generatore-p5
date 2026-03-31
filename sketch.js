@@ -1,5 +1,5 @@
 let PERLIN_SCALE = 200;
-let TILE_SIZE = 16;
+let TILE_SIZE = 8;
 let SPRITE_SIZE = 20;
 
 let grassImage;
@@ -36,19 +36,7 @@ function setup() {
     for (let y = 0; y<height; y = y+TILE_SIZE) {
       console.log(x, y);
       
-      //calcolo distanza dal centro
-      let distanceFromCenter = dist(x, y, centralX, centralY);
-      let normDistanceFromCenter = distanceFromCenter / (width / 2);
-
-      //calcolo altitudine
-      let altitude = 1 - normDistanceFromCenter;
-
-      //rumore perlin
-      noiseDetail(6); //coste frastagliate
-      let perlin = noise (x / PERLIN_SCALE, y / PERLIN_SCALE);
-      altitude *= perlin;
-      altitude += perlin;
-      altitude -= 0.5
+      let altitude = computeAltitude (x, y, centralX, centralY);
       
       // assegnamo il colore 
       let seaLevel = 0.2;
@@ -73,7 +61,35 @@ function setup() {
     for (let y = 0; y<height; y = y+TILE_SIZE) {
       console.log(x, y);
       
-      //calcolo distanza dal centro
+      let altitude = computeAltitude (x, y, centralX, centralY);
+      
+      // assegnamo il colore 
+      let seaLevel = 0.2;
+      let beachLevel = 0.28;
+
+      //SPRITES
+      //sunflower
+      if (random () < 0.01 && altitude > beachLevel) {
+        image (sunflowerImage, x, y, SPRITE_SIZE, SPRITE_SIZE);
+      }
+
+      //turtle
+      if (random () < 0.01 && altitude < seaLevel) {
+        image (turtleImage, x, y, SPRITE_SIZE, SPRITE_SIZE);
+      }
+
+      //bird
+      if (random () < 0.01 && altitude > beachLevel) {
+        image (birdImage, x, y, SPRITE_SIZE, SPRITE_SIZE);
+      }
+    }  
+
+  }
+
+}
+
+function computeAltitude (x, y, centralX, centralY) {
+  //calcolo distanza dal centro
       let distanceFromCenter = dist(x, y, centralX, centralY);
       let normDistanceFromCenter = distanceFromCenter / (width / 2);
 
@@ -85,29 +101,8 @@ function setup() {
       let perlin = noise (x / PERLIN_SCALE, y / PERLIN_SCALE);
       altitude *= perlin;
       altitude += perlin;
-      altitude -= 0.5
-      
-      // assegnamo il colore 
-      let seaLevel = 0.2;
-      let beachLevel = 0.28;
+      altitude -= 0.5;
 
-      //SPRITES
-      //sunflower
-      if (random () < 0.1 && altitude > beachLevel) {
-        image (sunflowerImage, x, y, SPRITE_SIZE, SPRITE_SIZE);
-      }
-
-      //turtle
-      if (random () < 0.1 && altitude < seaLevel) {
-        image (turtleImage, x, y, SPRITE_SIZE, SPRITE_SIZE);
-      }
-
-      //bird
-      if (random () < 0.01 && altitude > beachLevel) {
-        image (birdImage, x, y, SPRITE_SIZE, SPRITE_SIZE);
-      }
-    }  
-
-  }
+      return altitude;
 
 }

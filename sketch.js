@@ -1,14 +1,22 @@
 let PERLIN_SCALE = 200;
-let TILE_SIZE = 5;
+let TILE_SIZE = 16;
 
 let grassImage;
 let sandImage;
 let waterImage;
 
+let turtleImage;
+let sunflowerImage;
+let birdImage;
+
 function preload() {
-  grassImage = loadImage("tiles/Grass.png");
-  sandImage = loadImage("tiles/Sand.png");
-  waterImage = loadImage("tiles/Water.png");
+  grassImage = loadImage("assets/tiles/Grass.png");
+  sandImage = loadImage("assets/tiles/Sand.png");
+  waterImage = loadImage("assets/tiles/Water.png");
+  turtleImage = loadImage("assets/sprites/Turtle.png");
+  sunflowerImage = loadImage("assets/sprites/Sunflower.png");
+  birdImage = loadImage("assets/sprites/Bird.png");
+
 }
 
 function setup() {
@@ -45,6 +53,7 @@ function setup() {
       let seaLevel = 0.2;
       let beachLevel = 0.28;
 
+      //tiles
       let img;
       if (altitude < seaLevel) {
         img = waterImage;
@@ -53,9 +62,22 @@ function setup() {
       } else {
         img = grassImage;
       }
-      
-      
-      image (img, x, y, TILE_SIZE, TILE_SIZE);
+        image (img, x, y, TILE_SIZE, TILE_SIZE);
+
+      //sunflower
+      if (random () < 0.05 && altitude > beachLevel) {
+        image (sunflowerImage, x, y, TILE_SIZE, TILE_SIZE);
+      }
+
+      //turtle
+      if (random () < 0.02 && altitude < seaLevel) {
+        image (turtleImage, x, y, TILE_SIZE, TILE_SIZE);
+      }
+
+      //bird
+      if (random () < 0.01 && altitude > beachLevel) {
+        image (birdImage, x, y, TILE_SIZE, TILE_SIZE);
+      }
     }  
 
   }

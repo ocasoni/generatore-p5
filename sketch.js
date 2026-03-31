@@ -2,22 +2,30 @@ let PERLIN_SCALE = 200;
 let TILE_SIZE = 8;
 let SPRITE_SIZE = 20;
 
+//tiles
 let grassImage;
 let sandImage;
 let waterImage;
+let mountainImage;
 
+//sprites
 let turtleImage;
 let sunflowerImage;
 let birdImage;
+let treeImage;
+let waveImage;
+
 
 function preload() {
   grassImage = loadImage("assets/tiles/Grass.png");
   sandImage = loadImage("assets/tiles/Sand.png");
   waterImage = loadImage("assets/tiles/Water.png");
+  mountainImage = loadImage("assets/tiles/mountain.png");
   turtleImage = loadImage("assets/sprites/Turtle.png");
   sunflowerImage = loadImage("assets/sprites/Sunflower.png");
   birdImage = loadImage("assets/sprites/Bird.png");
-
+  treeImage = loadImage("assets/sprites/Tree.png");
+  waveImage = loadImage("assets/sprites/Wave.png");
 }
 
 function setup() {
@@ -31,7 +39,7 @@ function setup() {
   //sempre la stessa mappa di rumore perlin
   //noiseSeed (1);
 
-
+  //TILES
   for (let x = 0; x<width; x = x+TILE_SIZE) {
     for (let y = 0; y<height; y = y+TILE_SIZE) {
       console.log(x, y);
@@ -41,6 +49,7 @@ function setup() {
       // assegnamo il colore 
       let seaLevel = 0.2;
       let beachLevel = 0.28;
+      let mountainLevel = 0.5;
 
       //tiles
       let img;
@@ -48,15 +57,18 @@ function setup() {
         img = waterImage;
       } else if (altitude < beachLevel) {
         img = sandImage;
-      } else {
+      } else if (altitude < mountainLevel) {
         img = grassImage;
+      } else {
+        img = mountainImage;
+
       }
         image (img, x, y, TILE_SIZE, TILE_SIZE);
 
       }
     }  
 
-
+  //SPRITES
   for (let x = 0; x<width; x = x+TILE_SIZE) {
     for (let y = 0; y<height; y = y+TILE_SIZE) {
       console.log(x, y);
@@ -66,22 +78,35 @@ function setup() {
       // assegnamo il colore 
       let seaLevel = 0.2;
       let beachLevel = 0.28;
+      let mountainLevel = 0.5;
 
-      //SPRITES
+      
       //sunflower
-      if (random () < 0.01 && altitude > beachLevel) {
+      if (random () < 0.01 && altitude > beachLevel && altitude < mountainLevel) {
         image (sunflowerImage, x, y, SPRITE_SIZE, SPRITE_SIZE);
       }
 
       //turtle
-      if (random () < 0.01 && altitude < seaLevel) {
+      if (random () < 0.001 && altitude < seaLevel) {
         image (turtleImage, x, y, SPRITE_SIZE, SPRITE_SIZE);
       }
 
       //bird
-      if (random () < 0.01 && altitude > beachLevel) {
+      if (random () < 0.005 && altitude > beachLevel) {
         image (birdImage, x, y, SPRITE_SIZE, SPRITE_SIZE);
       }
+
+      //tree
+      if (random () < 0.02 && altitude > mountainLevel) {
+        image (treeImage, x, y, SPRITE_SIZE, SPRITE_SIZE);
+      }
+
+      //wave
+      if (random () < 0.001 && altitude < seaLevel) {
+        image (waveImage, x, y, SPRITE_SIZE, SPRITE_SIZE);
+      }
+
+
     }  
 
   }

@@ -1,9 +1,19 @@
-let PERLIN_SCALE = 50;
+let PERLIN_SCALE = 200;
+let TILE_SIZE = 5;
+
+let grassImage;
+let sandImage;
+let waterImage;
+
+function preload() {
+  grassImage = loadImage("tiles/Grass.png");
+  sandImage = loadImage("tiles/Sand.png");
+  waterImage = loadImage("tiles/Water.png");
+}
 
 function setup() {
-  createCanvas(200, 200);
+  createCanvas(windowWidth, windowHeight);
 
-  background(0);
   noStroke();
 
   let centralX = width / 2;
@@ -13,8 +23,8 @@ function setup() {
   //noiseSeed (1);
 
 
-  for (let x = 0; x<width; x++) {
-    for (let y = 0; y<height; y++) {
+  for (let x = 0; x<width; x = x+TILE_SIZE) {
+    for (let y = 0; y<height; y = y+TILE_SIZE) {
       console.log(x, y);
       
       //calcolo distanza dal centro
@@ -28,20 +38,24 @@ function setup() {
       noiseDetail(6); //coste frastagliate
       let perlin = noise (x / PERLIN_SCALE, y / PERLIN_SCALE);
       altitude *= perlin;
+      altitude += perlin;
+      altitude -= 0.5
       
       // assegnamo il colore 
       let seaLevel = 0.2;
-      let beachLevel = 0.25;
+      let beachLevel = 0.28;
+
+      let img;
       if (altitude < seaLevel) {
-        fill (0, 0, 255);
+        img = waterImage;
       } else if (altitude < beachLevel) {
-        fill (255, 255, 0);
+        img = sandImage;
       } else {
-        fill (0, 255, 0);
+        img = grassImage;
       }
       
       
-      rect(x, y, 1, 1);
+      image (img, x, y, TILE_SIZE, TILE_SIZE);
     }  
 
   }

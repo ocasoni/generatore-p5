@@ -7,10 +7,10 @@ let CLOUD_BASE_COUNT_MIN = 8;
 let CLOUD_BASE_COUNT_MAX = 14;
 let CLOUD_SEGMENT_W = 6;
 let CLOUD_SEGMENT_H = 6;
-let CLOUD_FORM_SPEED = 0.012;
-let CLOUD_DISSOLVE_SPEED = 0.01;
-let CLOUD_HOLD_MIN = 80;
-let CLOUD_HOLD_MAX = 160;
+let CLOUD_NOISE_SPATIAL_SCALE = 0.16;
+let CLOUD_NOISE_TIME_SPEED = 0.006;
+let CLOUD_THRESHOLD_ON = 0.5;
+let CLOUD_THRESHOLD_OFF = 0.43;
 let CLOUD_MIN_SPACING = 180;
 let CLOUD_BASE_W_MIN = 150;
 let CLOUD_BASE_W_MAX = 230;
@@ -168,15 +168,53 @@ function drawCloudOverlay() {
 
     // leggera oscillazione verticale per naturalezza
     let y = c.yBase + sin(frameCount * c.wobbleSpeed + c.seed * 100) * c.wobbleAmp;
+    let cx = (c.cols - 1) * 0.30;
+    let cy = (c.rows - 1) * 0.59;
 
-    updateCloudLifecycle(c);
+    c.noiseTime += CLOUD_NOISE_TIME_SPEED;
 
-    let visibleCount = floor(c.activeCells.length * c.visibility);
-    for (let k = 0; k < visibleCount; k++) {
-      let cell = c.activeCells[k];
-      let rx = c.x - c.w * 0.5 + cell.gx * CLOUD_SEGMENT_W;
-      let ry = y - c.h * 0.5 + cell.gy * CLOUD_SEGMENT_H;
-      rect(rx, ry, CLOUD_SEGMENT_W, CLOUD_SEGMENT_H);
+    // Perlin 3D nel tempo + isteresi: comparsa/scomparsa graduale senza flicker duro
+    for (let gy = 0; gy < c.rows; gy++) {
+      for (let gx = 0; gx < c.cols; gx++) {
+        // involucro irregolare per evitare nuvole a rettangolo
+        let nx = (gx - cx) / max(1, c.cols * 0.5);
+        let ny = (gy - cy) / max(1, c.rows * 0.5);
+        ny *= 1.15;
+        let r = sqrt(nx * nx + ny * ny);
+
+        let edgeNoise = noise(
+          (gx + c.shapeOffsetX) * 0.22,
+          (gy + c.shapeOffsetY) * 0.22,
+          c.shapeSeed
+        );
+        let localRadius = map(edgeNoise, 0, 1, 0.52, 1.08);
+        if (r > localRadius) {
+          c.state[gy][gx] = false;
+          continue;
+        }
+
+        let n = noise(
+          (gx + c.noiseOffsetX) * CLOUD_NOISE_SPATIAL_SCALE,
+          (gy + c.noiseOffsetY) * CLOUD_NOISE_SPATIAL_SCALE,
+          c.noiseTime
+        );
+
+        let edgeBoost = map(r, 0, localRadius, -0.05, 0.02);
+        let onThreshold = CLOUD_THRESHOLD_ON + edgeBoost;
+        let offThreshold = CLOUD_THRESHOLD_OFF + edgeBoost;
+
+        if (c.state[gy][gx]) {
+          c.state[gy][gx] = n > offThreshold;
+        } else {
+          c.state[gy][gx] = n > onThreshold;
+        }
+
+        if (c.state[gy][gx]) {
+          let rx = c.x - c.w * 0.5 + gx * CLOUD_SEGMENT_W;
+          let ry = y - c.h * 0.5 + gy * CLOUD_SEGMENT_H;
+          rect(rx, ry, CLOUD_SEGMENT_W, CLOUD_SEGMENT_H);
+        }
+      }
     }
   }
 }
@@ -210,16 +248,14 @@ function initializeClouds() {
       wobbleSpeed: random(0.01, 0.02),
       seed: seed,
       threshold: threshold,
-      mask: buildCloudMask(cols, rows, seed, threshold),
-      activeCells: [],
-      visibility: random(0, 0.3),
-      phase: "forming",
-      holdFrames: floor(random(CLOUD_HOLD_MIN, CLOUD_HOLD_MAX))
+      noiseOffsetX: random(1000),
+      noiseOffsetY: random(1000),
+      noiseTime: random(1000),
+      shapeOffsetX: random(1000),
+      shapeOffsetY: random(1000),
+      shapeSeed: random(1000),
+      state: createCloudState(rows, cols)
     });
-
-    let c = clouds[clouds.length - 1];
-    c.activeCells = getActiveCellsFromMask(c.mask);
-    shuffle(c.activeCells, true);
   }
 }
 
@@ -255,95 +291,16 @@ function findSparseCloudPosition(existingClouds, minSpacing) {
   return { x: bestX, y: bestY };
 }
 
-function updateCloudLifecycle(c) {
-  if (c.phase === "forming") {
-    c.visibility = min(1, c.visibility + CLOUD_FORM_SPEED);
-    if (c.visibility >= 1) {
-      c.phase = "hold";
-      c.holdFrames = floor(random(CLOUD_HOLD_MIN, CLOUD_HOLD_MAX));
-    }
-    return;
-  }
-
-  if (c.phase === "hold") {
-    c.holdFrames -= 1;
-    if (c.holdFrames <= 0) {
-      c.phase = "dissolving";
-    }
-    return;
-  }
-
-  if (c.phase === "dissolving") {
-    c.visibility = max(0, c.visibility - CLOUD_DISSOLVE_SPEED);
-    if (c.visibility <= 0) {
-      resetCloudShape(c);
-    }
-  }
-}
-
-function resetCloudShape(c) {
-  c.seed = random(1000);
-  c.threshold = random(0.5, 0.6);
-  c.yBase = random(0, height);
-  c.mask = buildCloudMask(c.cols, c.rows, c.seed, c.threshold);
-  c.activeCells = getActiveCellsFromMask(c.mask);
-  shuffle(c.activeCells, true);
-  c.visibility = 0;
-  c.phase = "forming";
-  c.holdFrames = floor(random(CLOUD_HOLD_MIN, CLOUD_HOLD_MAX));
-}
-
-function getActiveCellsFromMask(mask) {
-  let cells = [];
-
-  for (let gy = 0; gy < mask.length; gy++) {
-    for (let gx = 0; gx < mask[gy].length; gx++) {
-      if (mask[gy][gx]) {
-        cells.push({ gx: gx, gy: gy });
-      }
-    }
-  }
-
-  return cells;
-}
-
-function buildCloudMask(cols, rows, seed, threshold) {
-  let mask = [];
-  let cx = (cols - 1) * 0.5;
-  let cy = (rows - 1) * 0.5;
-
+function createCloudState(rows, cols) {
+  let state = [];
   for (let gy = 0; gy < rows; gy++) {
     let row = [];
     for (let gx = 0; gx < cols; gx++) {
-      // coord normalizzate per evitare silhouette rettangolare
-      let nx = (gx - cx) / max(1, cols * 0.5);
-      let ny = (gy - cy) / max(1, rows * 0.5);
-      ny *= 1.2; // nuvole leggermente piu' schiacciate in verticale
-      let r = sqrt(nx * nx + ny * ny);
-
-      // bordo irregolare: il raggio locale cambia con il noise
-      let edgeNoise = noise(
-        gx * 0.35 + seed * 11,
-        gy * 0.35 + seed * 23,
-        seed * 7
-      );
-      let localRadius = map(edgeNoise, 0, 1, 0.45, 1.05);
-
-      // texture interna della nuvola
-      let densityNoise = noise(
-        gx * 0.75 + seed * 31,
-        gy * 0.75 + seed * 43,
-        seed * 13
-      );
-
-      let inCore = r < 0.32;
-      let inIrregularBody = r < localRadius && densityNoise > threshold - 0.08;
-      row.push(inCore || inIrregularBody);
+      row.push(false);
     }
-    mask.push(row);
+    state.push(row);
   }
-
-  return mask;
+  return state;
 }
 
 function computeAltitude (x, y, centralX, centralY) {

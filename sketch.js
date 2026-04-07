@@ -1,6 +1,6 @@
-let PERLIN_SCALE = 200;
-let TILE_SIZE = 8;
-let SPRITE_SIZE = 20;
+let PERLIN_SCALE = 300;
+let TILE_SIZE = 15;
+let SPRITE_SIZE = 40;
 
 //tiles
 let grassImage;
@@ -48,22 +48,33 @@ function setup() {
       
       // assegnamo il colore 
       let seaLevel = 0.2;
+      let weaveLevel = 0.25;
       let beachLevel = 0.28;
       let mountainLevel = 0.5;
 
       //tiles
       let img;
       if (altitude < seaLevel) {
-        img = waterImage;
-      } else if (altitude < beachLevel) {
+        // mare colorato direttamente in blu invece di usare la tile acqua
+        fill(81, 112, 253);
+        rect(x, y, TILE_SIZE, TILE_SIZE);
+      } else if (altitude < weaveLevel) {
+        fill(96, 171, 251);
+        rect(x, y, TILE_SIZE, TILE_SIZE);
+      }
+      else if (altitude < beachLevel) {
         img = sandImage;
       } else if (altitude < mountainLevel) {
-        img = grassImage;
+        //img = grassImage;
+        fill(98, 118, 12);
+        rect(x, y, TILE_SIZE, TILE_SIZE);
       } else {
         img = mountainImage;
 
       }
+      if (img) {
         image (img, x, y, TILE_SIZE, TILE_SIZE);
+      }
 
       }
     }  
@@ -92,7 +103,7 @@ function setup() {
       }
 
       //bird
-      if (random () < 0.005 && altitude > beachLevel) {
+      if (random () < 0.003 && altitude > beachLevel) {
         image (birdImage, x, y, SPRITE_SIZE, SPRITE_SIZE);
       }
 
@@ -126,7 +137,7 @@ function computeAltitude (x, y, centralX, centralY) {
       let perlin = noise (x / PERLIN_SCALE, y / PERLIN_SCALE);
       altitude *= perlin;
       altitude += perlin;
-      altitude -= 0.5;
+      altitude -= 0.45; //abbassiamo il livello del mare
 
       return altitude;
 
